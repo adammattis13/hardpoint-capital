@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAFe ROI Calculator</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .icon { display: inline-block; width: 1.25rem; height: 1.25rem; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // Icon components using Font Awesome
+        const Calculator = () => <i className="fas fa-calculator icon"></i>;
+        const TrendingUp = () => <i className="fas fa-chart-line icon"></i>;
+        const Clock = () => <i className="fas fa-clock icon"></i>;
+        const Shield = () => <i className="fas fa-shield-alt icon"></i>;
+        const Zap = () => <i className="fas fa-bolt icon"></i>;
+        const Users = () => <i className="fas fa-users icon"></i>;
+        const DollarSign = () => <i className="fas fa-dollar-sign icon"></i>;
+        const BarChart3 = () => <i className="fas fa-chart-bar icon"></i>;
+
+        const SAFeROICalculator = () => {
+          const [inputs, setInputs] = useState({
+            orgSize: 100,
+            safeExperts: 'Partial',
+            safeExperience: 'Medium',
+            improvements: {
+              timeToMarket: 5,
+              quality: 5,
+              productivity: 5,
+              engagement: 5
+            }
+          });
+
+          // Data lookup tables based on your spreadsheet
+          const organizationData = {
+            50: {
+              totalRevenue: 356321839,
+              operatingCost: 213793103,
+              itBudget: 12970115,
+              newProductRevenue: 96206897,
+              dailyRevenue: 263581,
+              costReduction: { ttm: 129766, quality: 930000, productivity: 310000, engagement: 975000 },
+              valueGeneration: { ttm: 343973, quality: 186000, productivity: 15500000, engagement: 31000 },
+              safeInvestment: 39975,
+              safeInvestmentY2Plus: 28975
+            },
+            75: {
+              totalRevenue: 534482759,
+              operatingCost: 320689655,
+              itBudget: 19455172,
+              newProductRevenue: 144310345,
+              dailyRevenue: 395371,
+              costReduction: { ttm: 194649, quality: 1395000, productivity: 465000, engagement: 1462500 },
+              valueGeneration: { ttm: 515959, quality: 279000, productivity: 23250000, engagement: 46500 },
+              safeInvestment: 52463,
+              safeInvestmentY2Plus: 35963
+            },
+            100: {
+              totalRevenue: 712643678,
+              operatingCost: 427586207,
+              itBudget: 25940230,
+              newProductRevenue: 192413793,
+              dailyRevenue: 527161,
+              costReduction: { ttm: 259532, quality: 1860000, productivity: 620000, engagement: 1950000 },
+              valueGeneration: { ttm: 687945, quality: 372000, productivity: 31000000, engagement: 62000 },
+              safeInvestment: 64950,
+              safeInvestmentY2Plus: 42950
+            },
+            125: {
+              totalRevenue: 890804598,
+              operatingCost: 534482759,
+              itBudget: 32425287,
+              newProductRevenue: 240517241,
+              dailyRevenue: 658951,
+              costReduction: { ttm: 324415, quality: 2325000, productivity: 775000, engagement: 2437500 },
+              valueGeneration: { ttm: 859932, quality: 465000, productivity: 38750000, engagement: 77500 },
+              safeInvestment: 77438,
+              safeInvestmentY2Plus: 49938
+            },
+            150: {
+              totalRevenue: 1068965517,
+              operatingCost: 641379310,
+              itBudget: 38910345,
+              newProductRevenue: 288620690,
+              dailyRevenue: 790742,
+              costReduction: { ttm: 389298, quality: 2790000, productivity: 930000, engagement: 2925000 },
+              valueGeneration: { ttm: 1031918, quality: 558000, productivity: 46500000, engagement: 93000 },
+              safeInvestment: 89925,
+              safeInvestmentY2Plus: 56925
+            }
+          };
+
+          const expertiseMultiplier = {
+            'Full': { 'High': 1.0, 'Medium': 0.8, 'Low': 0.6 },
+            'Partial': { 'High': 0.8, 'Medium': 0.6, 'Low': 0.4 },
+            'None': { 'High': 0.6, 'Medium': 0.4, 'Low': 0.2 }
+          };
+
+          const benchmarks = {
+            timeToMarket: 30,
+            quality: 25,
+            productivity: 20,
+            engagement: 10
+          };
+
+          const companyExamples = {
+            timeToMarket: 'Bosch',
+            quality: 'Cisco',
+            productivity: 'Northwestern Mutual',
+            engagement: 'CMS'
+          };
+
+          // Find closest organization size in lookup table
+          const getOrgData = (size) => {
+            const sizes = Object.keys(organizationData).map(Number).sort((a, b) => a - b);
+            const closest = sizes.reduce((prev, curr) => 
+              Math.abs(curr - size) < Math.abs(prev - size) ? curr : prev
+            );
+            return organizationData[closest];
+          };
+
+          const calculations = useMemo(() => {
+            const orgData = getOrgData(inputs.orgSize);
+            const multiplier = expertiseMultiplier[inputs.safeExperts][inputs.safeExperience];
+            
+            const calculateBenefit = (category, improvementPercent) => {
+              const baseImprovement = improvementPercent / 100;
+              const adjustedImprovement = baseImprovement * multiplier;
+              
+              const costReduction = orgData.costReduction[category] * adjustedImprovement;
+              const valueGeneration = orgData.valueGeneration[category] * adjustedImprovement;
+              
+              return { costReduction, valueGeneration, total: costReduction + valueGeneration };
+            };
+
+            const yearlyBenefits = {};
+            const categories = ['timeToMarket', 'quality', 'productivity', 'engagement'];
+            
+            categories.forEach(category => {
+              const improvement = inputs.improvements[category];
+              const benefit = calculateBenefit(category, improvement);
+              
+              // Calculate year-over-year growth (conservative approach)
+              const growthRates = [0.2, 0.5, 1.0, 1.0, 1.0]; // Ramp-up pattern
+              
+              yearlyBenefits[category] = {
+                yearly: growthRates.map(rate => ({
+                  costReduction: benefit.costReduction * rate,
+                  valueGeneration: benefit.valueGeneration * rate,
+                  total: benefit.total * rate
+                })),
+                total: benefit.total * growthRates.reduce((sum, rate) => sum + rate, 0)
+              };
+            });
+
+            // Calculate investment costs
+            const year1Investment = orgData.safeInvestment;
+            const yearlyInvestment = orgData.safeInvestmentY2Plus;
+            const totalInvestment = year1Investment + (yearlyInvestment * 4);
+
+            // Calculate total returns
+            const totalReturns = categories.reduce((sum, category) => 
+              sum + yearlyBenefits[category].total, 0
+            );
+
+            const netReturn = totalReturns - totalInvestment;
+            const roi = totalInvestment > 0 ? (netReturn / totalInvestment) * 100 : 0;
+
+            // Calculate payback period
+            let cumulativeCashFlow = -year1Investment;
+            let paybackYear = null;
+            
+            for (let year = 0; year < 5; year++) {
+              const yearlyReturns = categories.reduce((sum, category) => 
+                sum + yearlyBenefits[category].yearly[year].total, 0
+              );
+              const yearlyInvestmentCost = year === 0 ? 0 : yearlyInvestment;
+              cumulativeCashFlow += yearlyReturns - yearlyInvestmentCost;
+              
+              if (cumulativeCashFlow > 0 && paybackYear === null) {
+                paybackYear = year + 1;
+              }
+            }
+
+            return {
+              totalReturns,
+              totalInvestment,
+              netReturn,
+              roi,
+              paybackYear,
+              yearlyBenefits,
+              orgData
+            };
+          }, [inputs]);
+
+          const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', { 
+              style: 'currency', 
+              currency: 'USD', 
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0 
+            }).format(amount);
+          };
+
+          const formatPercent = (percent) => {
+            return `${percent.toFixed(1)}%`;
+          };
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+              <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <Calculator />
+                    <h1 className="text-4xl font-bold text-gray-800">SAFe ROI Calculator</h1>
+                    <span className="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded">BETA</span>
+                  </div>
+                  <p className="text-gray-600 max-w-2xl mx-auto">
+                    Calculate the return on investment for your Scaled Agile Framework (SAFe) transformation. 
+                    Get insights into cost reductions and value generation across key improvement areas.
+                  </p>
+                </div>
+
+                <div className="grid lg:grid-cols-3 gap-8">
+                  {/* Input Panel */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Customer Context */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <Users />
+                        Customer Context
+                      </h2>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Organization Size (FTE)
+                          </label>
+                          <input
+                            type="number"
+                            value={inputs.orgSize}
+                            onChange={(e) => setInputs(prev => ({ ...prev, orgSize: parseInt(e.target.value) || 0 }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            min="50"
+                            max="500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Dedicated SAFe Experts
+                          </label>
+                          <select
+                            value={inputs.safeExperts}
+                            onChange={(e) => setInputs(prev => ({ ...prev, safeExperts: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="Full">Full</option>
+                            <option value="Partial">Partial</option>
+                            <option value="None">None</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Collective SAFe Experience
+                          </label>
+                          <select
+                            value={inputs.safeExperience}
+                            onChange={(e) => setInputs(prev => ({ ...prev, safeExperience: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Improvement Settings */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <TrendingUp />
+                        Improvement Estimates
+                      </h2>
+                      
+                      <div className="space-y-4">
+                        {[
+                          { key: 'timeToMarket', label: 'Faster Time to Market', icon: Clock, color: 'text-blue-600', example: companyExamples.timeToMarket },
+                          { key: 'quality', label: 'Higher Quality', icon: Shield, color: 'text-green-600', example: companyExamples.quality },
+                          { key: 'productivity', label: 'Higher Productivity', icon: Zap, color: 'text-yellow-600', example: companyExamples.productivity },
+                          { key: 'engagement', label: 'Higher Engagement', icon: Users, color: 'text-purple-600', example: companyExamples.engagement }
+                        ].map(({ key, label, icon: Icon, color, example }) => (
+                          <div key={key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className={`text-sm font-medium ${color} flex items-center gap-2`}>
+                                <Icon />
+                                {label}
+                              </label>
+                              <span className="text-xs text-gray-500">Benchmark: {formatPercent(benchmarks[key])}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min="1"
+                                max="10"
+                                value={inputs.improvements[key]}
+                                onChange={(e) => setInputs(prev => ({ 
+                                  ...prev, 
+                                  improvements: { 
+                                    ...prev.improvements, 
+                                    [key]: parseInt(e.target.value) 
+                                  } 
+                                }))}
+                                className="flex-1"
+                              />
+                              <span className="text-sm font-medium text-gray-700 w-10 text-center">
+                                {formatPercent(inputs.improvements[key])}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500">Example: {example}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Results Panel */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* ROI Summary */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <BarChart3 />
+                        5-Year ROI Summary
+                      </h2>
+                      
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <div className="text-sm text-green-600 font-medium">Total Projected Returns</div>
+                          <div className="text-2xl font-bold text-green-700">
+                            {formatCurrency(calculations.totalReturns)}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-red-50 rounded-lg p-4">
+                          <div className="text-sm text-red-600 font-medium">Total Projected Investment</div>
+                          <div className="text-2xl font-bold text-red-700">
+                            {formatCurrency(calculations.totalInvestment)}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="text-sm text-blue-600 font-medium">Projected Net Return</div>
+                          <div className="text-2xl font-bold text-blue-700">
+                            {formatCurrency(calculations.netReturn)}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <div className="text-sm text-purple-600 font-medium">Projected ROI</div>
+                          <div className="text-2xl font-bold text-purple-700">
+                            {formatPercent(calculations.roi)}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-yellow-50 rounded-lg p-4">
+                          <div className="text-sm text-yellow-600 font-medium">Payback Period</div>
+                          <div className="text-2xl font-bold text-yellow-700">
+                            {calculations.paybackYear ? `Year ${calculations.paybackYear}` : 'N/A'}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="text-sm text-gray-600 font-medium">Organization Size</div>
+                          <div className="text-2xl font-bold text-gray-700">
+                            {inputs.orgSize} FTE
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Yearly Breakdown */}
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <DollarSign />
+                        Projected Incremental Returns
+                      </h2>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="text-left p-3 font-medium text-gray-700">Benefit Category</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Year 1</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Year 2</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Year 3</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Year 4</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Year 5</th>
+                              <th className="text-right p-3 font-medium text-gray-700">Total</th>
+                              <th className="text-left p-3 font-medium text-gray-700">Example</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {[
+                              { key: 'timeToMarket', label: 'Faster Time to Market', type: 'Cost Reduction', color: 'text-blue-600', example: 'Bosch' },
+                              { key: 'quality', label: 'Higher Quality', type: 'Cost Reduction', color: 'text-green-600', example: 'Cisco' },
+                              { key: 'productivity', label: 'Higher Productivity', type: 'Cost Reduction', color: 'text-yellow-600', example: 'Northwestern Mutual' },
+                              { key: 'engagement', label: 'Higher Engagement', type: 'Cost Reduction', color: 'text-purple-600', example: 'CMS' },
+                              { key: 'timeToMarket', label: 'Faster Time to Market', type: 'Value Generation', color: 'text-blue-600', example: 'Standard Bank' },
+                              { key: 'quality', label: 'Higher Quality', type: 'Value Generation', color: 'text-green-600', example: 'SK hynix' },
+                              { key: 'productivity', label: 'Higher Productivity', type: 'Value Generation', color: 'text-yellow-600', example: 'Intel' },
+                              { key: 'engagement', label: 'Higher Engagement', type: 'Value Generation', color: 'text-purple-600', example: 'Capital One' }
+                            ].map(({ key, label, type, color, example }, index) => {
+                              const benefits = calculations.yearlyBenefits[key];
+                              const isValueGeneration = type === 'Value Generation';
+                              
+                              return (
+                                <tr key={`${key}-${type}`} className="hover:bg-gray-50">
+                                  <td className={`p-3 font-medium ${color}`}>
+                                    {label} ({type})
+                                  </td>
+                                  {benefits.yearly.map((yearData, yearIndex) => (
+                                    <td key={yearIndex} className="text-right p-3 text-gray-700">
+                                      {formatCurrency(isValueGeneration ? yearData.valueGeneration : yearData.costReduction)}
+                                    </td>
+                                  ))}
+                                  <td className="text-right p-3 font-medium text-gray-900">
+                                    {formatCurrency(isValueGeneration 
+                                      ? benefits.yearly.reduce((sum, year) => sum + year.valueGeneration, 0)
+                                      : benefits.yearly.reduce((sum, year) => sum + year.costReduction, 0)
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-gray-600">{example}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<SAFeROICalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
